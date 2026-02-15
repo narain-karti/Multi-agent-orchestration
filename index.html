@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="3D Two-Junction Traffic Simulation with AI-powered inter-node communication">
+    <title>AI Traffic Management — Dual Junction</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app">
+        <canvas id="simulationCanvas"></canvas>
+
+        <!-- HUD - Top Left -->
+        <div id="hud">
+            <div class="hud-panel">
+                <div class="hud-top-row">
+                    <h1>🚦 Dual Junction Sim</h1>
+                    <div id="stats">
+                        <div class="stat-item"><span class="stat-label">Vehicles</span><span class="stat-value"
+                                id="vehicleCount">0</span></div>
+                        <div class="stat-item"><span class="stat-label">FPS</span><span class="stat-value"
+                                id="fpsCount">60</span></div>
+                    </div>
+                </div>
+
+                <div class="hud-divider"></div>
+
+                <div class="hud-row">
+                    <button id="speedUp" class="hud-btn">⏩ Speed Up</button>
+                    <button id="speedDown" class="hud-btn">⏪ Slow Down</button>
+                    <button id="ambulanceBtn" class="hud-btn ambulance-btn">🚑 Ambulance</button>
+                </div>
+
+                <div class="hud-divider"></div>
+
+                <!-- Traffic Flow Indicator -->
+                <div class="flow-indicator">
+                    <span class="flow-label">Traffic Flow</span>
+                    <div class="flow-bar-bg">
+                        <div class="flow-bar" id="flowBar"></div>
+                    </div>
+                    <span class="flow-text" id="flowText">Moderate</span>
+                </div>
+
+                <div class="hud-divider"></div>
+
+                <div class="hud-row mode-row">
+                    <span class="mode-label">Signal Mode</span>
+                    <button id="fixedModeBtn" class="mode-btn active">⏱️ Fixed</button>
+                    <button id="aiModeBtn" class="mode-btn">🧠 AI</button>
+                </div>
+
+                <div class="hud-divider"></div>
+
+                <div class="hud-row legend-row">
+                    <div class="legend-item"><span class="dot red"></span>Stop</div>
+                    <div class="legend-item"><span class="dot yellow"></span>Caution</div>
+                    <div class="legend-item"><span class="dot green"></span>Go</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Junction Status Panels - Bottom Right -->
+        <div id="junctionPanel">
+            <div class="junction-card" id="junction1Card">
+                <div class="junction-header">
+                    <span class="junction-icon">🔵</span>
+                    <span class="junction-title">Junction A</span>
+                    <span class="junction-density" id="j1Density">—</span>
+                </div>
+                <div class="junction-signal">
+                    <span class="junction-dir" id="j1Dir">NORTH</span>
+                    <span class="junction-phase" id="j1Phase">🟢 GREEN</span>
+                </div>
+                <div class="junction-queues">
+                    <div class="jq-item"><span class="jq-label">N</span>
+                        <div class="jq-bar-bg">
+                            <div class="jq-bar" id="j1qN"></div>
+                        </div><span class="jq-count" id="j1qNc">0</span>
+                    </div>
+                    <div class="jq-item"><span class="jq-label">E</span>
+                        <div class="jq-bar-bg">
+                            <div class="jq-bar" id="j1qE"></div>
+                        </div><span class="jq-count" id="j1qEc">0</span>
+                    </div>
+                    <div class="jq-item"><span class="jq-label">S</span>
+                        <div class="jq-bar-bg">
+                            <div class="jq-bar" id="j1qS"></div>
+                        </div><span class="jq-count" id="j1qSc">0</span>
+                    </div>
+                    <div class="jq-item"><span class="jq-label">W</span>
+                        <div class="jq-bar-bg">
+                            <div class="jq-bar" id="j1qW"></div>
+                        </div><span class="jq-count" id="j1qWc">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="junction-card" id="junction2Card">
+                <div class="junction-header">
+                    <span class="junction-icon">🟠</span>
+                    <span class="junction-title">Junction B</span>
+                    <span class="junction-density" id="j2Density">—</span>
+                </div>
+                <div class="junction-signal">
+                    <span class="junction-dir" id="j2Dir">NORTH</span>
+                    <span class="junction-phase" id="j2Phase">🟢 GREEN</span>
+                </div>
+                <div class="junction-queues">
+                    <div class="jq-item"><span class="jq-label">N</span>
+                        <div class="jq-bar-bg">
+                            <div class="jq-bar" id="j2qN"></div>
+                        </div><span class="jq-count" id="j2qNc">0</span>
+                    </div>
+                    <div class="jq-item"><span class="jq-label">E</span>
+                        <div class="jq-bar-bg">
+                            <div class="jq-bar" id="j2qE"></div>
+                        </div><span class="jq-count" id="j2qEc">0</span>
+                    </div>
+                    <div class="jq-item"><span class="jq-label">S</span>
+                        <div class="jq-bar-bg">
+                            <div class="jq-bar" id="j2qS"></div>
+                        </div><span class="jq-count" id="j2qSc">0</span>
+                    </div>
+                    <div class="jq-item"><span class="jq-label">W</span>
+                        <div class="jq-bar-bg">
+                            <div class="jq-bar" id="j2qW"></div>
+                        </div><span class="jq-count" id="j2qWc">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Communication Dashboard - Bottom Left -->
+        <div id="aiDashboard">
+            <div class="dash-header">
+                <span class="dash-icon">🧠</span>
+                <span class="dash-title">AI Node Communication</span>
+                <span class="dash-status" id="dashStatus">ACTIVE</span>
+            </div>
+
+            <!-- API Key Input -->
+            <div class="dash-section api-section">
+                <div class="dash-subtitle">OpenAI API Key</div>
+                <div class="api-input-row">
+                    <input type="password" id="apiKeyInput" class="api-input" placeholder="sk-..." />
+                    <button id="apiConnectBtn" class="api-connect-btn">Connect</button>
+                </div>
+                <div class="api-status" id="apiStatus">Not connected</div>
+            </div>
+
+            <!-- Inter-Node Messages -->
+            <div class="dash-section">
+                <div class="dash-subtitle">Node Communication Log</div>
+                <div id="commLog" class="comm-log"></div>
+            </div>
+
+            <!-- AI Insight -->
+            <div class="dash-section">
+                <div class="dash-subtitle">AI Traffic Insight</div>
+                <div id="aiInsight" class="ai-insight">
+                    <span class="insight-placeholder">Connect API to enable AI insights...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>

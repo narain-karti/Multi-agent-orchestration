@@ -75,6 +75,11 @@
                     <span class="junction-dir" id="j1Dir">NORTH</span>
                     <span class="junction-phase" id="j1Phase">🟢 GREEN</span>
                 </div>
+                <!-- AI Reasoning Overlay -->
+                <div class="junction-ai-overlay" id="j1AiOverlay">
+                    <div class="ai-strategy">Strategy: <span id="j1Strategy">Waiting</span></div>
+                    <div class="ai-reason">Reasoning: <span id="j1Reason">Rotation</span></div>
+                </div>
                 <div class="junction-queues">
                     <div class="jq-item"><span class="jq-label">N</span>
                         <div class="jq-bar-bg">
@@ -107,6 +112,11 @@
                 <div class="junction-signal">
                     <span class="junction-dir" id="j2Dir">NORTH</span>
                     <span class="junction-phase" id="j2Phase">🟢 GREEN</span>
+                </div>
+                <!-- AI Reasoning Overlay -->
+                <div class="junction-ai-overlay" id="j2AiOverlay">
+                    <div class="ai-strategy">Strategy: <span id="j2Strategy">Waiting</span></div>
+                    <div class="ai-reason">Reasoning: <span id="j2Reason">Rotation</span></div>
                 </div>
                 <div class="junction-queues">
                     <div class="jq-item"><span class="jq-label">N</span>
@@ -143,9 +153,9 @@
 
             <!-- API Key Input -->
             <div class="dash-section api-section">
-                <div class="dash-subtitle">OpenAI API Key</div>
+                <div class="dash-subtitle">Gemini API Key</div>
                 <div class="api-input-row">
-                    <input type="password" id="apiKeyInput" class="api-input" placeholder="sk-..." />
+                    <input type="password" id="apiKeyInput" class="api-input" placeholder="AIzaSy..." />
                     <button id="apiConnectBtn" class="api-connect-btn">Connect</button>
                 </div>
                 <div class="api-status" id="apiStatus">Not connected</div>
@@ -161,7 +171,7 @@
             <div class="dash-section">
                 <div class="dash-subtitle">AI Traffic Insight</div>
                 <div id="aiInsight" class="ai-insight">
-                    <span class="insight-placeholder">Connect API to enable AI insights...</span>
+                    <span class="insight-placeholder">Connect Gemini API to enable AI insights...</span>
                 </div>
             </div>
         </div>

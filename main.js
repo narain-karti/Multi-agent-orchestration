@@ -76,6 +76,12 @@ function init() {
         spawnActiveTimer[sp.id] = 2 + Math.random() * 8;
         spawnProbability[sp.id] = spawnActive[sp.id] ? (0.3 + Math.random() * 0.7) : 0;
     });
+
+    // Initial log messages to verify rendering
+    addComm('system', '🛰️ Traffic Monitoring System online');
+    addComm('node-a', '📡 Node A (West Intersection) initialized');
+    addComm('node-b', '📡 Node B (East Intersection) initialized');
+
     setupUI(); addEventListener('resize', onResize); animate();
 }
 
@@ -418,50 +424,97 @@ function addComm(type, text) {
 }
 
 // ---- OpenAI Integration ----
+let isCallingAI = false;
 async function callOpenAI() {
-    if (!apiConnected || !openaiKey) return;
+    if (!apiConnected || !openaiKey || isCallingAI) return;
     const now = simTime;
     if (now - lastAiCall < aiCooldown) return;
     lastAiCall = now;
+    isCallingAI = true;
 
     const c1 = countWaiting(junctions[0]), c2 = countWaiting(junctions[1]);
-    const total1 = c1.north + c1.east + c1.south + c1.west, total2 = c2.north + c2.east + c2.south + c2.west;
+    const total1 = c1.north + c1.east + c1.south + c1.west;
+    const total2 = c2.north + c2.east + c2.south + c2.west;
+    const hasAmb = vehicles.some(v => v.isAmb);
 
-    const prompt = `You are an AI traffic management system overseeing two connected junctions (A and B) in a city. Analyze the current traffic state and give a brief 2-3 sentence insight. Be specific and actionable.
+    const prompt = `You are an AI traffic management system controlling two connected intersections (Junction A and Junction B) in a smart city. Analyze the real-time traffic data and provide coordination recommendations between the two nodes.
 
-Current State:
-- Junction A: Green=${junctions[0].currentGreenDir}, Queues: N=${c1.north}, E=${c1.east}, S=${c1.south}, W=${c1.west} (Total: ${total1})
-- Junction B: Green=${junctions[1].currentGreenDir}, Queues: N=${c2.north}, E=${c2.east}, S=${c2.south}, W=${c2.west} (Total: ${total2})
-- Traffic Density: ${getDensityLabel(currentDensity)} (${Math.round(currentDensity * 100)}%)
-- Total vehicles on road: ${vehicles.length}
-- Ambulance active: ${vehicles.some(v => v.isAmb) ? 'Yes' : 'No'}
-- Signal mode: ${aiEnabled ? 'AI Adaptive' : 'Fixed Timer'}
+LIVE TRAFFIC DATA:
+━━━━━━━━━━━━━━━━━
+Junction A — Green: ${junctions[0].currentGreenDir.toUpperCase()} | Queues: N=${c1.north} E=${c1.east} S=${c1.south} W=${c1.west} | Total: ${total1}
+Junction B — Green: ${junctions[1].currentGreenDir.toUpperCase()} | Queues: N=${c2.north} E=${c2.east} S=${c2.south} W=${c2.west} | Total: ${total2}
+Overall: ${vehicles.length} vehicles | Density: ${getDensityLabel(currentDensity)} (${Math.round(currentDensity * 100)}%)
+${hasAmb ? '⚠️ AMBULANCE ACTIVE — Emergency vehicle on road!' : 'No emergency vehicles.'}
+Mode: ${aiEnabled ? 'AI Adaptive' : 'Fixed Timer'}
 
-Provide inter-junction coordination insight. Keep it under 50 words.`;
+Respond with a structured analysis:
+1. COORDINATION: How should A and B synchronize signals? (1 sentence)
+2. BOTTLENECK: Which junction/direction needs attention? (1 sentence) 
+3. RECOMMENDATION: One specific action to optimize flow. (1 sentence)
+
+Keep total under 60 words. Be specific with directions and numbers.`;
 
     const insightEl = document.getElementById('aiInsight');
+    const dashStatus = document.getElementById('dashStatus');
     insightEl.classList.add('loading');
-    insightEl.innerHTML = '<span class="insight-placeholder">Analyzing traffic patterns...</span>';
+    insightEl.textContent = '🔄 Gemini is analyzing real-time data...';
+    if (dashStatus) {
+        dashStatus.textContent = 'THINKING';
+        dashStatus.style.boxShadow = '0 0 15px rgba(168, 85, 247, 0.4)';
+    }
+
+    // Add node communication messages
+    addComm('node-a', `📡 Broadcasting: ${total1} vehicles queued, Green=${junctions[0].currentGreenDir.toUpperCase()}`);
+    addComm('node-b', `📡 Broadcasting: ${total2} vehicles queued, Green=${junctions[1].currentGreenDir.toUpperCase()}`);
+    addComm('system', `🔗 Sending combined data to AI coordinator...`);
 
     try {
-        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+
+        const resp = await fetch('/api/ai', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiKey}` },
-            body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }], max_tokens: 100, temperature: 0.7 })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ apiKey: openaiKey, prompt }),
+            signal: controller.signal
         });
+
+        clearTimeout(timeout);
+
         const data = await resp.json();
-        if (data.error) throw new Error(data.error.message);
-        const insight = data.choices[0].message.content.trim();
+        if (data.error) throw new Error(data.error);
+
+        const insight = data.insight;
         insightEl.classList.remove('loading');
         insightEl.textContent = insight;
-        addComm('ai-response', insight.substring(0, 80) + (insight.length > 80 ? '...' : ''));
 
-        // Node-to-node messages based on AI analysis
-        addComm('node-a', `📡 Sent traffic data to Node B (${total1} vehicles queued)`);
-        addComm('node-b', `📡 Received data from Node A, adjusting coordination`);
+        addComm('ai-response', `🧠 ${insight.substring(0, 100)}${insight.length > 100 ? '...' : ''}`);
+        addComm('node-a', `✅ Acknowledged AI recommendation — adjusting strategy`);
+        addComm('node-b', `✅ Synchronized with Node A per AI coordination`);
+
+        if (dashStatus) {
+            dashStatus.textContent = 'ACTIVE';
+            dashStatus.style.boxShadow = '';
+        }
     } catch (err) {
+        if (dashStatus) {
+            dashStatus.textContent = 'ERROR';
+            dashStatus.style.boxShadow = '';
+        }
         insightEl.classList.remove('loading');
-        insightEl.innerHTML = `<span style="color:#ef4444">Error: ${err.message}</span>`;
+        let errorMsg = err.message;
+        if (err.name === 'AbortError') {
+            errorMsg = 'Request timed out — will retry next cycle';
+        } else if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+            errorMsg = 'Network error — check your internet connection and API key';
+        }
+        insightEl.textContent = `⚠️ ${errorMsg}`;
+        insightEl.style.color = '#fca5a5';
+        addComm('system', `⚠️ AI coordinator error: ${errorMsg.substring(0, 60)}`);
+        // Reset color after a moment
+        setTimeout(() => { insightEl.style.color = ''; }, 5000);
+    } finally {
+        isCallingAI = false;
     }
 }
 
@@ -496,6 +549,41 @@ function updateDash() {
             ce.textContent = c[dir]; bar.className = 'jq-bar';
             if (ad === dir) bar.classList.add('ambulance'); else if (c[dir] >= 4) bar.classList.add('high');
         }
+
+        const card = document.getElementById(`junction${ji + 1}Card`);
+        if (aiEnabled) {
+            const stratEl = document.getElementById(`${pf}Strategy`);
+            const reasonEl = document.getElementById(`${pf}Reason`);
+
+            const ambDir = detectAmb(j);
+            if (ambDir) {
+                stratEl.textContent = "EMERGENCY OVERRIDE";
+                reasonEl.textContent = `Priority: Ambulance on ${ambDir.toUpperCase()} lane.`;
+                card.classList.add('emergency');
+                card.classList.remove('ai-action');
+            } else {
+                card.classList.remove('emergency');
+                if (j.signalPhase === 'yellow' || j.signalPhase === 'allred') {
+                    card.classList.add('ai-action');
+                } else {
+                    card.classList.remove('ai-action');
+                }
+
+                if (j.signalPhase === 'green' && total === 0) {
+                    stratEl.textContent = "OPTIMIZING FLOW";
+                    reasonEl.textContent = "Current green lane is empty, switching...";
+                } else if (j.signalPhase === 'green') {
+                    stratEl.textContent = "MAINTAINING FLOW";
+                    reasonEl.textContent = `Processing ${c[j.currentGreenDir]} vehicles on ${j.currentGreenDir.toUpperCase()}.`;
+                } else {
+                    const nextDir = pickNext(j);
+                    stratEl.textContent = "DECISION MADE";
+                    reasonEl.textContent = `Next Priority: ${nextDir.toUpperCase()} (${c[nextDir]} queued).`;
+                }
+            }
+        } else {
+            card.classList.remove('emergency', 'ai-action');
+        }
     }
 
     // Comm log
@@ -518,18 +606,30 @@ function setupUI() {
     const fixedBtn = document.getElementById('fixedModeBtn'), aiBtn = document.getElementById('aiModeBtn'), dash = document.getElementById('aiDashboard');
     // Dashboard is always visible for API key access
     dash.classList.remove('hidden');
-    fixedBtn.addEventListener('click', () => { aiEnabled = false; fixedBtn.classList.add('active'); aiBtn.classList.remove('active'); });
-    aiBtn.addEventListener('click', () => { aiEnabled = true; aiBtn.classList.add('active'); fixedBtn.classList.remove('active'); commLog = []; addComm('system', 'AI Adaptive Control activated for both junctions'); });
+    fixedBtn.addEventListener('click', () => {
+        aiEnabled = false;
+        fixedBtn.classList.add('active');
+        aiBtn.classList.remove('active');
+        document.body.classList.remove('ai-mode-active');
+    });
+    aiBtn.addEventListener('click', () => {
+        aiEnabled = true;
+        aiBtn.classList.add('active');
+        fixedBtn.classList.remove('active');
+        document.body.classList.add('ai-mode-active');
+        commLog = [];
+        addComm('system', 'AI Adaptive Control activated for both junctions');
+    });
 
     document.getElementById('apiConnectBtn').addEventListener('click', () => {
         const key = document.getElementById('apiKeyInput').value.trim();
         const statusEl = document.getElementById('apiStatus');
         const btn = document.getElementById('apiConnectBtn');
-        if (!key || !key.startsWith('sk-')) { statusEl.textContent = 'Invalid key format'; statusEl.className = 'api-status error'; return; }
+        if (!key || key.length < 10) { statusEl.textContent = 'Invalid key — paste your Gemini API key'; statusEl.className = 'api-status error'; return; }
         openaiKey = key; apiConnected = true;
-        statusEl.textContent = '✓ Connected — insights every 15s'; statusEl.className = 'api-status connected';
+        statusEl.textContent = '✓ Connected to Gemini — insights every 15s'; statusEl.className = 'api-status connected';
         btn.textContent = '✓ Connected'; btn.classList.add('connected');
-        addComm('system', '🔗 OpenAI API connected — enabling AI insights');
+        addComm('system', '🔗 Gemini 2.5 Flash connected — enabling AI insights');
         callOpenAI(); // First call immediately
     });
 }

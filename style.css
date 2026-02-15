@@ -274,7 +274,7 @@ body {
 #junctionPanel {
     position: absolute;
     bottom: 16px;
-    right: 16px;
+    left: 16px;
     z-index: 10;
     display: flex;
     flex-direction: column;
@@ -283,15 +283,39 @@ body {
 }
 
 .junction-card {
-    background: rgba(8, 15, 28, 0.88);
+    background: rgba(8, 15, 28, 0.94);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(100, 116, 139, 0.18);
+    border: 1px solid rgba(100, 116, 139, 0.2);
     border-radius: 14px;
     padding: 12px 14px;
-    width: 220px;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
-    transition: border-color 0.3s ease;
+    width: 240px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.junction-card.ai-action {
+    border-color: rgba(168, 85, 247, 0.6);
+    box-shadow: 0 0 25px rgba(168, 85, 247, 0.25);
+    transform: translateY(-4px);
+}
+
+.junction-card.emergency {
+    border-color: rgba(239, 68, 68, 0.7);
+    box-shadow: 0 0 35px rgba(239, 68, 68, 0.4);
+    animation: pulseEmergency 0.8s infinite alternate;
+}
+
+@keyframes pulseEmergency {
+    from {
+        transform: scale(1);
+        border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    to {
+        transform: scale(1.03);
+        border-color: rgba(239, 68, 68, 0.9);
+    }
 }
 
 .junction-card:hover {
@@ -359,7 +383,54 @@ body {
     background: rgba(30, 41, 59, 0.5);
     border-radius: 7px;
     padding: 5px 10px;
+    margin-bottom: 4px;
+}
+
+.junction-ai-overlay {
+    background: rgba(168, 85, 247, 0.08);
+    border: 1px solid rgba(168, 85, 247, 0.15);
+    border-radius: 6px;
+    padding: 6px 8px;
     margin-bottom: 8px;
+    display: none;
+    /* Only visible in AI mode */
+    animation: slideDown 0.3s ease;
+}
+
+body.ai-mode-active .junction-ai-overlay {
+    display: block;
+}
+
+.ai-strategy {
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: #c4b5fd;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
+}
+
+.ai-reason {
+    font-size: 0.55rem;
+    color: #94a3b8;
+    line-height: 1.2;
+}
+
+#j1Strategy,
+#j2Strategy {
+    color: #a855f7;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .junction-dir {
@@ -443,20 +514,19 @@ body {
 #aiDashboard {
     position: absolute;
     bottom: 16px;
-    left: 16px;
-    width: 320px;
-    max-height: calc(100vh - 300px);
-    background: rgba(8, 15, 28, 0.92);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(34, 211, 238, 0.18);
-    border-radius: 16px;
-    padding: 14px 16px;
+    right: 16px;
+    width: 420px;
+    max-height: calc(100vh - 260px);
+    background: rgba(8, 15, 28, 0.97);
+    border: 1px solid rgba(34, 211, 238, 0.25);
+    border-radius: 18px;
+    padding: 18px 22px;
     z-index: 10;
     font-family: 'Inter', sans-serif;
+    color: #e2e8f0;
     transition: opacity 0.35s ease, transform 0.35s ease;
     pointer-events: all;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6), 0 0 20px rgba(34, 211, 238, 0.05);
     overflow-y: auto;
 }
 
@@ -489,19 +559,19 @@ body {
 }
 
 .dash-icon {
-    font-size: 0.95rem;
+    font-size: 1.3rem;
 }
 
 .dash-title {
-    font-size: 0.72rem;
+    font-size: 0.95rem;
     font-weight: 700;
-    color: #e2e8f0;
+    color: #f1f5f9;
     flex: 1;
     letter-spacing: -0.01em;
 }
 
 .dash-status {
-    font-size: 0.5rem;
+    font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.1em;
     color: #22d3ee;
@@ -520,12 +590,12 @@ body {
 }
 
 .dash-subtitle {
-    font-size: 0.52rem;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #475569;
-    margin-bottom: 6px;
+    color: #94a3b8;
+    margin-bottom: 8px;
 }
 
 /* ---- API Key Input ---- */
@@ -547,14 +617,14 @@ body {
     border-radius: 6px;
     color: #e2e8f0;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.55rem;
-    padding: 5px 8px;
+    font-size: 0.8rem;
+    padding: 8px 12px;
     outline: none;
     transition: border-color 0.2s ease;
 }
 
 .api-input::placeholder {
-    color: #334155;
+    color: #64748b;
 }
 
 .api-input:focus {
@@ -567,9 +637,9 @@ body {
     border-radius: 6px;
     color: #22d3ee;
     font-family: 'Inter', sans-serif;
-    font-size: 0.55rem;
+    font-size: 0.78rem;
     font-weight: 600;
-    padding: 5px 10px;
+    padding: 8px 16px;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
@@ -587,8 +657,8 @@ body {
 }
 
 .api-status {
-    font-size: 0.5rem;
-    color: #475569;
+    font-size: 0.72rem;
+    color: #94a3b8;
     font-weight: 500;
 }
 
@@ -602,11 +672,16 @@ body {
 
 /* ---- Communication Log ---- */
 .comm-log {
-    max-height: 120px;
+    max-height: 200px;
+    min-height: 40px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 5px;
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: 8px;
+    padding: 8px;
+    border: 1px solid rgba(148, 163, 184, 0.1);
 }
 
 .comm-log::-webkit-scrollbar {
@@ -623,8 +698,8 @@ body {
 }
 
 .comm-entry {
-    font-size: 0.52rem;
-    padding: 4px 6px;
+    font-size: 0.76rem;
+    padding: 7px 10px;
     border-radius: 4px;
     line-height: 1.35;
     display: flex;
@@ -671,9 +746,9 @@ body {
 
 .comm-tag {
     font-weight: 700;
-    font-size: 0.48rem;
+    font-size: 0.65rem;
     letter-spacing: 0.04em;
-    padding: 1px 4px;
+    padding: 2px 6px;
     border-radius: 3px;
     white-space: nowrap;
     flex-shrink: 0;
@@ -700,8 +775,8 @@ body {
 }
 
 .comm-time {
-    font-size: 0.45rem;
-    color: #334155;
+    font-size: 0.62rem;
+    color: #64748b;
     font-weight: 600;
     white-space: nowrap;
     flex-shrink: 0;
@@ -716,12 +791,12 @@ body {
     background: rgba(15, 23, 42, 0.6);
     border: 1px solid rgba(168, 85, 247, 0.15);
     border-radius: 8px;
-    padding: 8px 10px;
-    font-size: 0.55rem;
+    padding: 14px 16px;
+    font-size: 0.85rem;
     line-height: 1.5;
     color: #c4b5fd;
-    min-height: 32px;
-    max-height: 80px;
+    min-height: 60px;
+    max-height: 140px;
     overflow-y: auto;
 }
 
@@ -739,7 +814,7 @@ body {
 }
 
 .insight-placeholder {
-    color: #334155;
+    color: #94a3b8;
     font-style: italic;
 }
 
